@@ -1,102 +1,87 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-
-# LangChain Imports
 from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-# 1. Page Configuration (The "Professional" Look)
-st.set_page_config(
-    page_title="BMS Verification Agent",
-    page_icon="🔋",
-    layout="wide"
-)
-
-# Load secrets
+# --- Page Setup ---
+st.set_page_config(page_title="AI Engineering Agent", page_icon="⚡", layout="wide")
 load_dotenv()
 
-# 2. Load the "Brain" (Cached for speed)
+# --- Memory & Logic ---
 @st.cache_resource
-def load_chain():
-    # Load Vector DB
-    embeddings = OpenAIEmbeddings()
+def load_ai_system():
     vectorstore = Chroma(
         persist_directory="./chroma_db", 
-        embedding_function=embeddings
+        embedding_function=OpenAIEmbeddings()
     )
     retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-
-    # Initialize LLM
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
-    # Define System Prompt (Your Engineering Logic)
+    # PRO SYSTEM PROMPT: Optimized for BMO (Compliance) and Johnson (MATLAB)
     system_prompt = (
-        "You are a Senior Verification Engineer for an Automotive Battery System. "
-        "Use the provided context to answer the user's request. "
-        "\n\n"
-        "If the user asks for a test script:"
-        "1. Identify numerical limits (voltage, current, temp) from the context."
-        "2. Generate a MATLAB/Simulink test script snippet."
-        "3. Cite the section of the manual you used."
-        "\n\n"
+        "You are a Senior Verification Engineer specializing in Safety-Critical Systems (ISO 26262) "
+        "and Regulatory Compliance. Use the provided context and history to assist the user.\n\n"
+        "GUIDELINES:\n"
+        "1. If generating MATLAB: Provide a full, standalone function with professional comments.\n"
+        "2. For Financial Queries: Prioritize accuracy and cite specific regulatory sections.\n"
+        "3. Maintain 'Traceability': Always mention which document or section provided the limit.\n\n"
         "Context: {context}"
     )
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
+        MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{input}"),
     ])
 
-    # Build Chain
-    question_answer_chain = create_stuff_documents_chain(llm, prompt)
-    rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-    
-    return rag_chain
+    document_chain = create_stuff_documents_chain(llm, prompt)
+    return create_retrieval_chain(retriever, document_chain)
 
-# Load the chain
-try:
-    chain = load_chain()
-except Exception as e:
-    st.error(f"Error loading the brain: {e}")
-    st.stop()
+# --- UI Interface ---
+st.title("⚡ Enterprise Verification Agent")
+st.markdown("*Bridging Requirements to Executable Code*")
 
-# 3. Sidebar (The Control Panel)
-with st.sidebar:
-    st.header("🔋 System Controls")
-    st.markdown("This tool automates **ISO 26262** compliance checks.")
-    st.info("Connected to: **BMS_Safety_Manual_v1.0**")
-    if st.button("Clear Chat History"):
-        st.session_state.messages = []
-
-# 4. Main Chat Interface
-st.title("⚡ Automated Verification Agent")
-st.markdown("Ask engineering questions or request **MATLAB test scripts**.")
-
-# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat messages from history
+# Sidebar Controls
+with st.sidebar:
+    st.header("Settings")
+    if st.button("Clear Conversation History"):
+        st.session_state.messages = []
+    st.divider()
+    st.info("Architecture: RAG (Retrieval-Augmented Generation) with ChromaDB persistence.")
+
+# Load system
+rag_chain = load_ai_system()
+
+# Display chat
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# React to user input
-if prompt := st.chat_input("Ex: Write a MATLAB script to check over-current limits."):
-    # Display user message
-    st.chat_message("user").markdown(prompt)
-    st.session_state.messages.append({"role": "user", "content": prompt})
+# User Input
+if user_query := st.chat_input("Ask about safety limits or MATLAB test generation..."):
+    st.chat_message("user").markdown(user_query)
+    
+    # Prepare history for the AI
+    chat_history = []
+    for m in st.session_state.messages:
+        chat_history.append((m["role"], m["content"]))
 
-    # Generate response
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing Safety Requirements..."):
-            response = chain.invoke({"input": prompt})
+        with st.spinner("Analyzing Knowledge Base..."):
+            response = rag_chain.invoke({
+                "input": user_query,
+                "chat_history": chat_history
+            })
             answer = response["answer"]
             st.markdown(answer)
     
-    # Save assistant message
+    # Save to session
+    st.session_state.messages.append({"role": "user", "content": user_query})
     st.session_state.messages.append({"role": "assistant", "content": answer})

@@ -3,42 +3,52 @@ from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
-# Load your API key
 load_dotenv()
 
-def ingest_documents():
-    print("🚀 Starting Ingestion Process...")
+def ingest_all_domains():
+    print("🚀 Initializing Multi-Domain Ingestor...")
     
-    # 1. Load the Technical Manual
-    # This reads the text from your PDF
-    loader = PyPDFLoader("manual.pdf")
-    raw_documents = loader.load()
-    print(f"   - Loaded {len(raw_documents)} pages from manual.pdf")
+    # Path configuration
+    base_data_path = "./data_vault"
+    persist_directory = "./chroma_db"
+    
+    # Ensure data_vault exists
+    if not os.path.exists(base_data_path):
+        os.makedirs(f"{base_data_path}/automotive")
+        os.makedirs(f"{base_data_path}/finance")
+        print(f"📁 Created folders. Please put your PDFs in {base_data_path}")
+        return
 
-    # 2. Semantic Chunking (The Engineering Logic)
-    # We split text into chunks of 1000 characters.
-    # 'overlap' ensures we don't cut a sentence in half (like "Max voltage is... [cut] ...4.2V").
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        separators=["\n\n", "\n", "(?<=\. )", " ", ""]
-    )
-    documents = text_splitter.split_documents(raw_documents)
-    print(f"   - Split into {len(documents)} searchable knowledge chunks.")
+    all_docs = []
+    
+    # Loop through subfolders (Automotive, Finance, etc.)
+    for domain in os.listdir(base_data_path):
+        domain_path = os.path.join(base_data_path, domain)
+        if os.path.isdir(domain_path):
+            print(f"📂 Processing Domain: {domain.upper()}")
+            for file in os.listdir(domain_path):
+                if file.endswith(".pdf"):
+                    loader = PyPDFLoader(os.path.join(domain_path, file))
+                    raw_docs = loader.load()
+                    # Add metadata so the AI knows which 'domain' the info belongs to
+                    for doc in raw_docs:
+                        doc.metadata["domain"] = domain
+                    all_docs.extend(raw_docs)
 
-    # 3. Create the Vector Database (The Brain)
-    # This sends your text to OpenAI, gets the "embedding" (math representation),
-    # and saves it locally in a folder called 'chroma_db'.
-    print("   - Embedding data... (this might take 10-20 seconds)")
+    # Semantic Splitting
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    final_chunks = text_splitter.split_documents(all_docs)
+
+    # Vector Storage
+    print(f"🧠 Embedding {len(final_chunks)} chunks into Vector DB...")
     vectorstore = Chroma.from_documents(
-        documents=documents,
+        documents=final_chunks,
         embedding=OpenAIEmbeddings(),
-        persist_directory="./chroma_db" 
+        persist_directory=persist_directory
     )
-    
-    print("✅ Success! Your PDF is now a searchable AI database.")
+    print("✅ Multi-Domain Brain Built Successfully!")
 
 if __name__ == "__main__":
-    ingest_documents()
+    ingest_all_domains()
