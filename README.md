@@ -1,39 +1,36 @@
-# ⚡ Automated Verification Agent
+# ⚡ Enterprise Verification Agent (EVA)
+### Automated Compliance & Code Generation for High-Stakes Industries
 
-### AI-Powered Requirements Tracing for Battery Management Systems (BMS)
+![Project Demo](demo.png)
 
-![Project Demo](demo.png) 
-*(This tool automates the validation of ISO 26262 safety standards by translating PDF manuals into executable MATLAB test scripts.)*
+## 🚀 The Mission
+Engineers and analysts often face "document fatigue" when checking technical systems against 1000+ pages of safety standards or financial regulations. 
+
+This project solves that by using **Retrieval-Augmented Generation (RAG)** to bridge the gap between unstructured PDF requirements and executable verification logic.
+
+## 🏗️ Multi-Domain Architecture
+The system is designed with a **Domain-Agnostic Knowledge Pipeline**. By utilizing a directory-based ingestion strategy, the agent can pivot between industry contexts seamlessly:
+
+- **🔋 Automotive (ISO 26262):** Parses BMS safety manuals to auto-generate MATLAB/Simulink test scripts for over-voltage, thermal protection, and current limits.
+- **🏦 Finance (BMO/Banking Regs):** Analyzes regulatory compliance documents (e.g., OSFI guidelines) to verify banking procedures and audit requirements.
+
+## 🛠️ Technical Stack
+* **LLM Engine:** OpenAI GPT-4o (State-of-the-art reasoning for code and logic).
+* **Framework:** LangChain (Orchestrating the retrieval and memory chain).
+* **Vector Database:** ChromaDB (Persistent semantic storage for document chunks).
+* **Interface:** Streamlit (Professional web-based dashboard).
+* **Memory:** Stateful Conversation History (Remembers context across follow-up questions).
+
+## 🔋 Advanced Features
+- **Semantic Chunking:** Advanced text splitting that preserves the context of engineering tables and numerical limits.
+- **Traceability:** Every response includes citations from the source material to meet audit standards.
+- **Professional MATLAB Output:** Generates standalone, commented functions ready for integration into Simulink Test.
+
+## 💻 Installation & Usage
+1. **Clone Repo:** `git clone https://github.com/zhanz565/automated-verification-agent.git`
+2. **Environment:** Add your `OPENAI_API_KEY` to a `.env` file.
+3. **Ingest Data:** Place PDFs in `data_vault/automotive` or `data_vault/finance`, then run `python ingest.py`.
+4. **Launch Web App:** `streamlit run app.py`
 
 ---
-
-## 🚀 Overview
-In automotive engineering, verifying Simulink models against thousands of pages of safety manuals is a bottleneck. 
-
-I built this **RAG (Retrieval-Augmented Generation)** agent to automate that workflow. It allows engineers to query technical documentation and instantly generate **MATLAB/Simulink verification scripts** that check for compliance (e.g., Over-Voltage, Thermal Cutoff).
-
-## 🛠️ Tech Stack
-* **Core Logic:** Python, LangChain
-* **AI Model:** OpenAI GPT-4o
-* **Vector Database:** ChromaDB (Semantic Retrieval)
-* **Frontend:** Streamlit
-* **Data Processing:** Unstructured.io (PDF Chunking)
-
-## 🔋 Key Features
-✅ **Semantic Search:** Understands engineering context (e.g., knows that "4.2V" relates to "Over-voltage limits").  
-✅ **Code Generation:** Auto-writes `.m` scripts compatible with Simulink test harnesses.  
-✅ **Traceability:** Cites the specific section/page of the PDF for every rule it enforces.  
-
-## 💻 How to Run
-1. **Clone the repo:**
-   ```bash
-   git clone [https://github.com/YOUR_USERNAME/automated-verification-agent.git](https://github.com/YOUR_USERNAME/automated-verification-agent.git)
-Install dependencies:
-
-Bash
-pip install -r requirements.txt
-Run the App:
-
-Bash
-streamlit run app.py
-Built by Zhenxin Zhang - Focused on AI-Driven Engineering Tools.wqw
+*Developed by Zhenxin Zhang - Specialized in AI Automation and Embedded Systems Verification.*
